@@ -1,0 +1,6 @@
+execution:
+  allow_after_hours: false
+  market_open: "09:30"
+  market_close: "16:00"
+  default_order_type: market
+  max_retries: 3

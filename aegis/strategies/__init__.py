@@ -1,0 +1,1 @@
+"""Aegis strategy package scaffold."""

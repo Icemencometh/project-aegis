@@ -1,0 +1,55 @@
+components:
+  technical:
+    enabled: true
+    weight_default: 0.20
+  order_flow:
+    enabled: true
+    weight_default: 0.20
+  squeeze:
+    enabled: true
+    weight_default: 0.15
+  ml:
+    enabled: true
+    weight_default: 0.20
+  regime:
+    enabled: true
+    weight_default: 0.10
+  macro:
+    enabled: true
+    weight_default: 0.05
+  liquidity:
+    enabled: true
+    weight_default: 0.05
+  sentiment:
+    enabled: false
+    weight_default: 0.05
+
+confidence_bands:
+  elite: [95, 100]
+  strong_buy: [90, 94]
+  buy: [85, 89]
+  watch: [80, 84]
+  monitor: [75, 79]
+  reject: [0, 74]
+
+thresholds:
+  min_probability_execute: 85
+  min_confidence_execute: 80
+  min_liquidity_score: 70
+  min_reward_to_risk: 2.0
+
+adaptive_weighting:
+  enabled: true
+  update_interval_days: 7
+  min_weight: 0.05
+  max_weight: 0.35
+
+meta_model:
+  enabled: true
+  model_type: xgboost
+  retrain_frequency_days: 14
+  feature_set_version: v1
+
+logging:
+  persist_scored_records: true
+  scoring_store: "postgres://scoring_store"

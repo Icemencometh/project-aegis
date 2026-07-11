@@ -1,0 +1,1 @@
+"""Aegis feature package scaffold."""

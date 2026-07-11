@@ -1,0 +1,5 @@
+portfolio:
+  initial_cash: 100000.0
+  reserved_capital: 0.0
+  max_position_pct: 1.0
+  leverage_limit: 1.0

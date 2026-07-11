@@ -1,0 +1,1 @@
+"""Aegis regime package scaffold."""

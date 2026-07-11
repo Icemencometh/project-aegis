@@ -1,0 +1,7 @@
+limits:
+  max_heat: 0.75
+  max_drawdown_pct: 0.10
+  max_gross_exposure_pct: 1.50
+  max_net_exposure_pct: 1.00
+  max_symbol_pct: 0.35
+  max_sector_pct: 0.50
