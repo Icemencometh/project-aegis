@@ -1,0 +1,502 @@
+PROJECT_AEGIS_OVERVIEW
+Version: 1.0
+Date: 2026-07-11
+Status: Authoritative architecture and operating reference
+Owner: Aegis Core Team
+
+====================================================================
+1) MISSION AND PHILOSOPHY
+====================================================================
+Aegis is a modular, institutional-grade decision and execution stack for
+systematic trading. Its mission is to produce high-quality trade intents,
+filter them through strict risk and portfolio governance, execute them
+reliably, and learn from outcomes through repeatable research and model
+promotion loops.
+
+Aegis is intentionally designed to be:
+- Deterministic first, adaptive second.
+- Config-driven over hard-coded.
+- Auditable over opaque.
+- Incremental over monolithic.
+- Safe by default under uncertainty.
+
+Primary objective:
+- Convert market and strategy signals into governed, explainable, and
+  executable actions while preserving capital and improving decision quality
+  over time.
+
+Non-goals:
+- Aegis is not a discretionary click-trading UI.
+- Aegis is not a black-box "auto-profit" engine.
+- Aegis is not tied to a single broker, data vendor, or strategy style.
+
+====================================================================
+2) SYSTEM PRINCIPLES
+====================================================================
+1. Separation of concerns
+   Scoring, alpha generation, risk, allocation, portfolio accounting,
+   execution, and research are distinct modules with explicit contracts.
+
+2. Single source of truth
+   Configuration and state transitions should be explicit and versioned.
+
+3. Explainability at every stage
+   Every accepted/rejected trade should carry rationale and provenance.
+
+4. Safety gates before speed
+   Risk and capital constraints take precedence over opportunity capture.
+
+5. Progressive enhancement
+   Deterministic baseline behavior must function even when advanced models,
+   external services, or optional components are unavailable.
+
+6. Operational resilience
+   Retries, idempotent actions, and clean failure modes are mandatory.
+
+7. Testability and repeatability
+   Unit tests, integration tests, and replay tests are first-class artifacts.
+
+====================================================================
+3) HIGH-LEVEL ARCHITECTURE
+====================================================================
+Top-level package: aegis/
+
+Core domains:
+- scoring/       -> Trade scoring hub and component scorers
+- alpha/         -> Prediction + calibration + trade intent generation
+- risk/          -> Environment, trade, position, and portfolio gates
+- portfolio/     -> Position state, exposure, attribution, reconciliation
+- execution/     -> Order construction, submission, retry, fill handling
+- marketplace/   -> Strategy registration and lifecycle surface
+- allocation/    -> Capital sizing and trade quantity assignment
+- meta/          -> Meta-model synthesis layer
+- common/        -> Shared types, config, and logging primitives
+- config/        -> YAML config surfaces for scoring/risk/portfolio/execution
+
+ASCII architecture diagram:
+
+  [Strategies/Signals]
+          |
+          v
+  [Scoring Hub] ---> [Meta-Model]
+          |
+          v
+      [Alpha Hub]
+          |
+          v
+      [Risk Engine] ----> (Rejected trades + reasons)
+          |
+          v
+ [Capital Allocation AI]
+          |
+          v
+   [Execution Engine] <----> [Broker Adapter(s)]
+          |
+          v
+   [Portfolio Manager] ----> [Persistence/Attribution/Reconciliation]
+          |
+          v
+ [Research + Promotion Feedback Loop]
+
+====================================================================
+4) END-TO-END DATA FLOW
+====================================================================
+Pipeline sequence:
+1. Candidate trades enter from strategy layer.
+2. Scoring Hub computes component scores and weighted composite score.
+3. Meta-model augments or validates aggregate confidence.
+4. Alpha Hub transforms scored opportunities into normalized trade intents.
+5. Risk Engine evaluates hard/soft constraints and rejects unsafe intents.
+6. Allocation Engine assigns capital and quantity under policy budgets.
+7. Execution Engine builds orders, submits with retry policy, tracks fills.
+8. Portfolio Manager updates positions/cash/exposure and stores snapshots.
+9. Attribution and research subsystems analyze outcomes and feed promotion.
+
+ASCII flow with control gates:
+
+  candidates
+      |
+      v
+  score() ---- if below threshold --> drop
+      |
+      v
+  alpha_intent()
+      |
+      v
+  risk_check() ---- if blocked ------> reject_log
+      |
+      v
+  allocate_qty()
+      |
+      v
+  execute_order() ---- if failed ----> retry_or_cancel
+      |
+      v
+  apply_fill()
+      |
+      v
+  snapshot + attribution + research_store
+
+====================================================================
+5) MODULE REFERENCE
+====================================================================
+
+5.1 SCORING HUB
+Purpose:
+- Produce robust, explainable trade quality scores from multiple independent
+  evidence channels.
+
+Core pieces:
+- scoring/engine.py
+- scoring/weighting.py
+- scoring/explainable.py
+- scoring/meta.py
+- scoring/modules/*
+
+Component modules (current baseline):
+- technical
+- order_flow
+- squeeze
+- ml
+- regime
+- macro
+- liquidity
+- sentiment
+
+Contract:
+- Input: trade candidate + feature snapshot + regime snapshot
+- Output: component_scores, weight map, composite probability score,
+  confidence class, rationale list, optional meta score.
+
+Operational notes:
+- Weighting is regime-aware.
+- Scoring remains deterministic by default.
+- Confidence classes are policy boundaries for downstream gates.
+
+5.2 ALPHA HUB
+Purpose:
+- Convert scored opportunities into executable trade intents.
+
+Core pieces:
+- alpha/hub.py
+- alpha/prediction_service.py
+- alpha/calibration_service.py
+- alpha/model_registry.py
+
+Responsibilities:
+- Gather prediction outputs.
+- Calibrate probability.
+- Determine directional side.
+- Emit normalized intent payload with metadata.
+
+Expected intent fields:
+- symbol, side, entry, stop, target
+- probability, expected_return, holding_time
+- alpha_metadata (model/version/registry details)
+
+5.3 RISK ENGINE
+Purpose:
+- Apply mandatory safety checks before capital is committed.
+
+Core piece:
+- risk/engine.py
+
+Gate categories:
+- Environment gates (market state, halt conditions, macro kill-switch)
+- Trade-level gates (symbol/side/qty sanity)
+- Position-level gates (max position size, concentration)
+- Portfolio-level gates (gross/net exposure, heat, drawdown policy)
+
+Outputs:
+- Approved intents
+- Rejected intents with explicit reason list and risk flags
+
+5.4 PORTFOLIO MANAGER
+Purpose:
+- Maintain system-of-record state for positions and cash.
+
+Core pieces:
+- portfolio/manager.py
+- portfolio/positions.py
+- portfolio/exposures.py
+- portfolio/reconciliation.py
+- portfolio/attribution.py
+- portfolio/allocation.py
+- portfolio/persistence.py
+
+Responsibilities:
+- Apply fills to internal state.
+- Reconcile with broker state.
+- Calculate gross/net and symbol exposures.
+- Support attribution and snapshot persistence.
+
+State contract:
+- Positions keyed by symbol with qty and avg price.
+- Cash tracked as post-trade ledger value.
+- Snapshot is serializable and testable.
+
+5.5 EXECUTION ENGINE
+Purpose:
+- Translate intent into broker-compatible orders and manage submission cycle.
+
+Core pieces:
+- execution/engine.py
+- execution/order_builder.py
+- execution/retry_policy.py
+- execution/fill_handler.py
+- execution/metrics.py
+- execution/broker_interface.py
+- execution/paper_broker.py
+- execution/live_broker.py
+
+Responsibilities:
+- Build order payloads.
+- Submit/cancel/modify through broker adapter.
+- Apply retry logic for transient failures.
+- Record submission/fill metrics.
+- Forward filled intents to portfolio manager.
+
+Design principle:
+- Broker adapters are pluggable; engine contract remains stable.
+
+5.6 STRATEGY MARKETPLACE
+Purpose:
+- Manage strategy registration and lifecycle metadata.
+
+Core pieces:
+- marketplace/registry.py
+- marketplace/onboarding.py
+- marketplace/selector.py
+- marketplace/runner.py
+- marketplace/performance.py
+
+Responsibilities:
+- Register/unregister strategy entries.
+- Keep strategy metadata and active status.
+- Select active strategy set for runtime.
+- Store basic strategy performance snapshots.
+
+5.7 CAPITAL ALLOCATION AI
+Purpose:
+- Size trades under portfolio budget and risk policy.
+
+Core piece:
+- allocation/engine.py
+
+Policy goals:
+- Respect global and strategy-level budgets.
+- Bound quantity by max position and liquidity context.
+- Support deterministic baseline sizing and future advanced methods.
+
+Default implementation stance:
+- Deterministic sizing based on available cash and configured fractions.
+- Extendable to fractional Kelly and uncertainty-adjusted sizing.
+
+5.8 META-MODEL ENGINE
+Purpose:
+- Synthesize component-level evidence into a secondary aggregate score.
+
+Core piece:
+- meta/engine.py
+
+Typical uses:
+- Ensemble arbitration.
+- Confidence correction.
+- Regime-conditioned weighting overrides.
+
+5.9 COMMON LAYER
+Purpose:
+- Shared primitives and utilities used across all domains.
+
+Core pieces:
+- common/types.py
+- common/logging.py
+- config/*.yaml
+
+Responsibilities:
+- Shared typed structures.
+- Structured logger surface.
+- Config loading conventions and defaults.
+
+====================================================================
+6) RESEARCH ENGINE AND LEARNING LOOP
+====================================================================
+Research and promotion are cross-cutting functions rather than one file.
+They should consume outputs from scoring, risk decisions, fills, and
+portfolio state transitions.
+
+Research lifecycle:
+1. Collect labeled decision records.
+2. Evaluate strategy and model outcomes by regime.
+3. Compare baseline vs candidate model or strategy variants.
+4. Promote, shadow, or retire according to promotion policy.
+
+Required datasets for institutional operation:
+- Input features per decision
+- Component scores and weights
+- Risk outcomes (approved/rejected + reason codes)
+- Execution outcomes (slippage, fills, retries)
+- Portfolio impact and attribution metrics
+
+====================================================================
+7) TESTING REQUIREMENTS
+====================================================================
+Test pyramid:
+1. Unit tests per module contract.
+2. Integration tests across phase boundaries.
+3. Replay/regression tests for deterministic reproducibility.
+4. Operational smoke tests for package import and startup.
+
+Mandatory scenarios:
+- Score -> Alpha -> Risk rejection path
+- Score -> Alpha -> Risk approval -> Allocation -> Execution fill path
+- Retry then fill path
+- Reconciliation mismatch detection
+- Exposure limit breach rejection
+- Missing/invalid inputs fail safely
+
+CI baseline:
+- Python 3.10/3.11/3.12 matrix
+- lint + typing + pytest
+- targeted Aegis module tests as explicit gate
+
+====================================================================
+8) PROMOTION AND GOVERNANCE RULES
+====================================================================
+Model/strategy promotion should be rules-based and documented.
+
+Baseline promotion policy template:
+- Candidate must pass quality and stability thresholds over evaluation window.
+- Candidate must not violate risk envelope compared to baseline.
+- Candidate may enter shadow mode before active promotion.
+- Rollback path must be immediate and deterministic.
+
+Change-control requirements:
+- Every promoted artifact has version tag and decision record.
+- Config deltas are reviewed and committed.
+- Promotion events are audit logged.
+
+====================================================================
+9) DEVELOPMENT SEQUENCE (RECOMMENDED)
+====================================================================
+Phase 1: Deterministic core
+- Finalize module interfaces and test contracts.
+- Ensure full replay determinism.
+
+Phase 2: Risk and execution hardening
+- Expand risk policies and broker error handling.
+- Add stronger observability and idempotency safeguards.
+
+Phase 3: Research and promotion automation
+- Build model/strategy scorecards and promotion workflow.
+
+Phase 4: Adaptive intelligence
+- Add uncertainty-aware weighting and calibrated meta-model upgrades.
+
+Phase 5: Production operations
+- Add runbooks, incident handling, SLA metrics, and compliance hooks.
+
+====================================================================
+10) VERSIONING RULES
+====================================================================
+Use semantic versioning for package-level releases.
+
+Suggested rule:
+- MAJOR: breaking contract changes
+- MINOR: backward-compatible capability additions
+- PATCH: bug fixes and non-breaking refinements
+
+Every release should include:
+- Changelog summary
+- Config changes
+- Migration notes if needed
+- Updated tests and passing CI evidence
+
+====================================================================
+11) CODING STANDARDS
+====================================================================
+General standards:
+- Keep modules cohesive and contracts explicit.
+- Prefer typed interfaces and serializable payloads.
+- Use deterministic defaults and pure functions where practical.
+- Avoid side effects in scorers and evaluators.
+- Prefer config-driven policies over hard-coded constants.
+
+Implementation standards:
+- Public APIs must be documented by docstrings and tests.
+- Errors should be actionable and non-ambiguous.
+- Logs should include decision context, not sensitive credentials.
+- All rejection paths must include machine-readable reason codes.
+
+====================================================================
+12) CONTRIBUTION GUIDELINES (HUMANS + AI AGENTS)
+====================================================================
+Before coding:
+- Read this document and module contracts.
+- Verify current config and test expectations.
+
+When adding features:
+- Update module contract and tests first.
+- Preserve existing interfaces unless versioned intentionally.
+- Add or update decision notes for architectural changes.
+
+When changing risk or execution behavior:
+- Include replay evidence and risk-case tests.
+- Document failure modes and rollback approach.
+
+When changing scoring logic:
+- Provide rationale for weight or feature changes.
+- Include confidence and calibration impact notes.
+
+PR acceptance checklist:
+- Tests pass locally and in CI.
+- No unreviewed config drift.
+- Decision record updated for non-trivial changes.
+- Documentation updated where behavior changed.
+
+====================================================================
+13) GLOSSARY
+====================================================================
+Candidate trade:
+- Raw strategy output before scoring and governance.
+
+Scored opportunity:
+- Candidate with component scores, weights, and confidence class.
+
+Trade intent:
+- Normalized pre-execution object produced by Alpha Hub.
+
+Risk decision:
+- Approve/reject result with reason codes.
+
+Allocation decision:
+- Capital and quantity assignment for approved intents.
+
+Execution result:
+- Broker response plus normalized fill summary.
+
+Portfolio snapshot:
+- Serializable state of positions, cash, and exposures.
+
+Promotion event:
+- Governance action moving model/strategy between states.
+
+====================================================================
+14) FUTURE EXTENSIONS
+====================================================================
+Priority enhancements:
+- Full calibration pipeline with out-of-sample validation.
+- Regime-conditioned dynamic policy switching.
+- Advanced portfolio optimizer with turnover constraints.
+- Multi-broker smart routing and venue-aware execution.
+- Persistent audit store and compliance reporting layer.
+
+====================================================================
+15) FINAL NOTE
+====================================================================
+This file is the canonical onboarding artifact for Aegis architecture.
+If code behavior conflicts with this document, either:
+1) update code to match documented contract, or
+2) update this document and record the decision in project governance.
+
+End of file.
