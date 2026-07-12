@@ -1,0 +1,7 @@
+yfinance
+numpy
+apscheduler
+requests
+trycourier
+flask
+pyyaml

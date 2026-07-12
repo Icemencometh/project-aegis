@@ -1,0 +1,11 @@
+thresholds:
+  scoring: 0.60
+  risk: 0.25
+  allocation: 0.35
+  regime: 0.40
+  execution: 0.10
+  portfolio: 0.25
+
+metadata:
+  mode: hybrid_c
+  purpose: phase2_parity_gate
