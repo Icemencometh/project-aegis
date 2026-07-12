@@ -3,3 +3,9 @@ portfolio:
   reserved_capital: 0.0
   max_position_pct: 1.0
   leverage_limit: 1.0
+  # Strategy Marketplace concentration guard: no single strategy may account
+  # for more than this fraction of deployable cash (Aegis_AI_Onboarding_Guide.md:
+  # "Do not let a single strategy dominate the portfolio").
+  max_strategy_allocation_pct: 0.25
+  default_qty: 10
+  max_qty: 100
