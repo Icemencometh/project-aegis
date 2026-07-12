@@ -1,0 +1,21 @@
+data/
+
+# Secrets -- never commit these
+robinhood_credentials.json
+*.env
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# OS / editor cruft
+.DS_Store
+
+# Stray files accidentally created in this repo
+.gitignore.py
+.gitignore .py
