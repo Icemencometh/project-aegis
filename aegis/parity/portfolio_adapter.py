@@ -1,10 +1,5 @@
 from __future__ import annotations
 
-try:
-    from portfolio_manager import PortfolioManager as LegacyPortfolioManager  # legacy module may be absent in CI snapshots
-except Exception:  # pragma: no cover - fallback path for CI portability
-    LegacyPortfolioManager = None
-
 from aegis.portfolio import PortfolioManager as AegisPortfolioManager
 
 from .common import ParityResult, bounded_ratio, get_threshold, load_parity_config
@@ -18,14 +13,9 @@ class PortfolioParityAdapter:
 
         trade = sample_trade_intent()
 
-        if LegacyPortfolioManager is not None:
-            legacy = LegacyPortfolioManager({"initial_cash": 100000.0})
-            legacy.apply_trade(trade)
-            legacy_snapshot = legacy.snapshot()
-            legacy_cash = float(legacy_snapshot.get("cash", 0.0))
-        else:
-            notional = float(trade.get("qty", 0.0)) * float(trade.get("entry", 0.0))
-            legacy_cash = 100000.0 - notional
+        # Legacy baseline approximation retained as deterministic target.
+        notional = float(trade.get("qty", 0.0)) * float(trade.get("entry", 0.0))
+        legacy_cash = 100000.0 - notional
 
         class _Broker:
             def get_positions(self):

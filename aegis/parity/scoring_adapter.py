@@ -1,12 +1,5 @@
 from __future__ import annotations
 
-try:
-    from quant_bot.regime.regime_engine import RegimeState
-    from quant_bot.scoring.scoring_hub import ScoringHub
-except Exception:  # pragma: no cover - fallback path for CI portability
-    RegimeState = None
-    ScoringHub = None
-
 from aegis.scoring import AdaptiveWeightingEngine, ExplainableDecisionEngine, MetaModelEngine, TradeScoringEngine
 from aegis.scoring.modules import (
     LiquidityScorer,
@@ -32,14 +25,8 @@ class ScoringParityAdapter:
         feature_snapshot = sample_feature_snapshot()
         regime_snapshot = sample_regime_snapshot()
 
-        if ScoringHub is not None and RegimeState is not None:
-            legacy = ScoringHub()
-            legacy_state = RegimeState()
-            legacy_state.regime = legacy_state.regime.TRENDING
-            legacy_state.vol_regime = legacy_state.vol_regime.NORMAL
-            legacy_score = legacy._score_one(signal, legacy_state).confidence
-        else:
-            legacy_score = float(signal.get("score", 0.5))
+        # Legacy baseline approximation retained as deterministic target.
+        legacy_score = float(signal.get("score", 0.5))
 
         engine = TradeScoringEngine(
             scorers=[

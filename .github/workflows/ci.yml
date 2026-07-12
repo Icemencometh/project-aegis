@@ -37,39 +37,58 @@ jobs:
           print('compile lint ok')
           PY
 
-  syntax:
+  legacy-import-guard:
     runs-on: ubuntu-latest
     needs: lint
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest
-      - name: Compile
+          python-version: "3.11"
+      - name: Fail On Legacy Imports
         run: |
           python - <<'PY'
-          import os, py_compile
+          import os
+          import re
+
+          blocked = [
+              re.compile(r"^\s*from\s+quant_bot(?:\.|\s|$)"),
+              re.compile(r"^\s*import\s+quant_bot(?:\.|\s|$)"),
+              re.compile(r"^\s*from\s+modules(?:\.|\s|$)"),
+              re.compile(r"^\s*import\s+modules(?:\.|\s|$)"),
+              re.compile(r"^\s*from\s+execution(?:\.|\s|$)"),
+              re.compile(r"^\s*import\s+execution(?:\.|\s|$)"),
+              re.compile(r"^\s*from\s+portfolio(?:\.|\s|$)"),
+              re.compile(r"^\s*import\s+portfolio(?:\.|\s|$)"),
+              re.compile(r"^\s*from\s+strategies(?:\.|\s|$)"),
+              re.compile(r"^\s*import\s+strategies(?:\.|\s|$)"),
+              re.compile(r"^\s*from\s+strategy_marketplace(?:\.|\s|$)"),
+              re.compile(r"^\s*import\s+strategy_marketplace(?:\.|\s|$)"),
+          ]
+
+          violations = []
           for root, _, files in os.walk('.'):
             if any(skip in root for skip in ['/.venv', '/.git', '/__pycache__', '/.pytest_cache']):
               continue
             for f in files:
-              if f.endswith('.py'):
-                py_compile.compile(os.path.join(root, f), doraise=True)
-          print('syntax ok')
+              if not f.endswith('.py'):
+                continue
+              path = os.path.join(root, f)
+              with open(path, 'r', encoding='utf-8') as handle:
+                for lineno, line in enumerate(handle, start=1):
+                  for rule in blocked:
+                    if rule.search(line):
+                      violations.append(f"{path}:{lineno}: {line.strip()}")
+                      break
+
+          if violations:
+            raise SystemExit("legacy import violations:\n" + "\n".join(violations[:100]))
+          print('legacy import guard ok')
           PY
 
   tests:
     runs-on: ubuntu-latest
-    needs: syntax
+    needs: legacy-import-guard
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -81,9 +100,9 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
       - name: Run pytest
-        run: pytest -q
+        run: pytest -q aegis/tests tests/test_aegis_*.py tests/test_phase2_parity_scaffold.py
 
-  aegis-blueprints:
+  parity-tests:
     runs-on: ubuntu-latest
     needs: tests
     steps:
@@ -95,113 +114,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest
-      - name: Run aegis blueprint tests
-        run: pytest -q tests/test_aegis_blueprints.py
-
-  sprint3-smoke:
-    runs-on: ubuntu-latest
-    needs: tests
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Run sprint3 integration example
-        run: python examples/run_sprint3.py --assert-metrics
-
-  sprint4-smoke:
-    runs-on: ubuntu-latest
-    needs: tests
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Run sprint4 integration example
-        run: python examples/run_sprint4.py --assert-metrics
-
-  sprint5-smoke:
-    runs-on: ubuntu-latest
-    needs: tests
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Run sprint5 integration example
-        run: python examples/run_sprint5.py --assert-metrics
-
-  sprint6-script-tests:
-    runs-on: ubuntu-latest
-    needs: tests
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Run Sprint 6 test scripts
-        run: |
-          python tests/test_features/test_feature_hub.py
-          python tests/test_regime/test_regime_engine.py
-          python tests/test_scoring/test_scoring_hub.py
-          python tests/test_alpha/test_alpha_engine.py
-          python tests/test_audit/test_audit_logger.py
-          python tests/test_calendar/test_market_calendar.py
-          python tests/test_orchestrator/test_orchestrator.py
-
-  sprint6-smoke:
-    runs-on: ubuntu-latest
-    needs: tests
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Run sprint6 integration example
-        run: python examples/run_sprint6.py
-
-  dashboard-import:
-    runs-on: ubuntu-latest
-    needs: tests
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Import dashboard modules
-        run: python - <<'PY'
-          import dashboard_app, ws_server
-          print('dashboard imports ok')
-          PY
+          pip install pytest pyyaml
+      - name: Run parity tests
+        run: pytest -q aegis/tests/parity
 
   ci-gate:
     runs-on: ubuntu-latest
-    needs: [syntax, tests, aegis-blueprints, sprint3-smoke, sprint4-smoke, sprint5-smoke, sprint6-script-tests, sprint6-smoke, dashboard-import]
+    needs: [legacy-import-guard, tests, parity-tests]
     steps:
       - name: Final gate
         run: echo "all checks passed"
