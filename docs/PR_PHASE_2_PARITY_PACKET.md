@@ -16,6 +16,7 @@ Builds the Phase 2 parity framework between Aegis and legacy systems for scoring
 - Added parity tests under `aegis/tests/parity/`
 - Added parity report generator at `aegis/parity/report.py`
 - Added parity workflow `.github/workflows/parity.yml`
+- Enabled strict gating: parity tests now fail when threshold drift is exceeded.
 
 ## Acceptance Criteria
 - parity test suite executes

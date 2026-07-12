@@ -1,5 +1,5 @@
 thresholds:
-  scoring: 0.25
+  scoring: 0.60
   risk: 0.25
   allocation: 0.35
   regime: 0.40

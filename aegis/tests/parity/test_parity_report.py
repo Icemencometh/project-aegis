@@ -11,3 +11,5 @@ def test_parity_report_generation(tmp_path: Path):
     assert Path(report["json"]).exists()
     assert Path(report["markdown"]).exists()
     assert report["summary"]["total"] == 6
+    assert report["summary"]["failed"] == 0
+    assert report["summary"]["passed"] == 6
