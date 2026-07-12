@@ -26,6 +26,12 @@ class AlphaHub:
             "probability": prob_up * 100.0,
             "expected_return": ml_out.get("expected_return"),
             "holding_time": ml_out.get("holding_time"),
+            # Not part of the contract's required field list, but carried
+            # through additively so downstream marketplace/allocation stages
+            # (e.g. enforce_strategy_concentration) can still attribute a
+            # trade intent back to the strategy that emitted the candidate.
+            "strategy": scored_trade.get("strategy"),
+            "strategy_version": scored_trade.get("strategy_version"),
             "alpha_metadata": {
                 "model": model_name,
                 "model_version": ml_out.get("version"),
