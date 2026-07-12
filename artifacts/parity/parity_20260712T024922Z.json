@@ -1,0 +1,68 @@
+{
+  "timestamp": "20260712T024922Z",
+  "total": 6,
+  "passed": 6,
+  "failed": 0,
+  "results": [
+    {
+      "name": "scoring",
+      "ok": true,
+      "diff": 0.4075342465753425,
+      "threshold": 0.6,
+      "details": {
+        "legacy_confidence": 0.73,
+        "aegis_probability": 0.4325
+      }
+    },
+    {
+      "name": "risk",
+      "ok": true,
+      "diff": 0.0,
+      "threshold": 0.25,
+      "details": {
+        "legacy_allowed": true,
+        "aegis_allowed": true
+      }
+    },
+    {
+      "name": "allocation",
+      "ok": true,
+      "diff": 0.0,
+      "threshold": 0.35,
+      "details": {
+        "legacy_units": 66,
+        "aegis_qty": 66.0
+      }
+    },
+    {
+      "name": "regime",
+      "ok": true,
+      "diff": 0.0,
+      "threshold": 0.4,
+      "details": {
+        "legacy_regime": "trending",
+        "aegis_regime": "bull"
+      }
+    },
+    {
+      "name": "execution",
+      "ok": true,
+      "diff": 0.0,
+      "threshold": 0.1,
+      "details": {
+        "legacy_status": "FILLED",
+        "aegis_status": "filled"
+      }
+    },
+    {
+      "name": "portfolio",
+      "ok": true,
+      "diff": 0.0,
+      "threshold": 0.25,
+      "details": {
+        "legacy_cash": 98500.0,
+        "aegis_cash": 98500.0
+      }
+    }
+  ]
+}
