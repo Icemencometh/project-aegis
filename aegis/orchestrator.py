@@ -15,6 +15,7 @@ Execution -- there is no bypass path.
 
 from __future__ import annotations
 
+import datetime as _dt
 from typing import Any, Dict, List, Optional
 
 from .alpha import AlphaHub, CalibrationService, ModelRegistry, PredictionService
@@ -44,6 +45,7 @@ from .scoring.modules import (
     ShortSqueezeScorer,
     TechnicalScorer,
 )
+from .strategies import MomentumStrategy
 
 
 class AegisPipeline:
@@ -160,3 +162,52 @@ class AegisPipeline:
             "rejected": rejected,
             "fills": fills,
         }
+
+
+def _default_bar_from_payload(payload: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    payload = dict(payload or {})
+    price = float(payload.get("price", 100.0) or 100.0)
+    return {
+        "timestamp": _dt.datetime.utcnow().isoformat(),
+        "open": price,
+        "high": float(payload.get("high", price * 1.01) or (price * 1.01)),
+        "low": float(payload.get("low", price * 0.99) or (price * 0.99)),
+        "close": float(payload.get("close", price) or price),
+        "volume": float(payload.get("volume", 1000.0) or 1000.0),
+    }
+
+
+def run_daily_once(symbol: str = "SPY", payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Compatibility adapter used by legacy root entrypoints."""
+    pipeline = AegisPipeline()
+    pipeline.register_strategy(MomentumStrategy())
+    bar = _default_bar_from_payload(payload)
+    return pipeline.run_cycle(str(symbol), [bar])
+
+
+def run_robot(symbol: str = "SPY", payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Primary runtime adapter for root `main.py`."""
+    return run_daily_once(symbol=symbol, payload=payload)
+
+
+def run_scheduler(hour: int = 7, minute: int = 0, symbol: str = "SPY") -> None:
+    """Scheduler adapter for root `scheduler.py`."""
+    try:
+        from apscheduler.schedulers.blocking import BlockingScheduler
+    except Exception:
+        result = run_daily_once(symbol=symbol)
+        print("APScheduler is not installed; executed one Aegis cycle instead.")
+        print("Approved:", len(result.get("approved", [])))
+        print("Rejected:", len(result.get("rejected", [])))
+        return
+
+    def _job() -> None:
+        outcome = run_daily_once(symbol=symbol)
+        print("Aegis scheduled cycle complete.")
+        print("Approved:", len(outcome.get("approved", [])))
+        print("Rejected:", len(outcome.get("rejected", [])))
+
+    scheduler = BlockingScheduler()
+    scheduler.add_job(_job, "cron", hour=int(hour), minute=int(minute))
+    print(f"Aegis scheduler started. Daily job set for {int(hour):02d}:{int(minute):02d}.")
+    scheduler.start()
