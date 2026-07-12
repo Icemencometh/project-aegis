@@ -1,0 +1,54 @@
+Aegis Coding Standards
+======================
+
+1. Language and Version
+- Python 3.10+ only.
+- Use type hints everywhere (PEP 484).
+- Follow PEP 8 for style.
+
+2. Naming Conventions
+- Modules: snake_case (example: scoring_engine.py).
+- Classes: PascalCase (example: TradeScoringEngine).
+- Functions: snake_case (example: score_trades).
+- Constants: UPPER_SNAKE_CASE.
+- Config keys: snake_case.
+
+3. Module Boundaries
+- Each module has a single responsibility.
+- Do not mix data ingestion, scoring, risk, and execution in one file.
+- Cross-module calls must go through defined interfaces, not ad-hoc imports.
+
+4. Determinism and Side Effects
+- Core logic (scoring, risk, allocation) must be deterministic given inputs.
+- No hidden global state.
+- Side effects (I/O, network, DB) must be isolated behind interfaces.
+
+5. Logging
+- Use structured logging with correlation IDs.
+- Log all major decisions: scoring, risk rejections, executions, reconciliations.
+- No printing to stdout in production code.
+
+6. Error Handling
+- Fail safe: when in doubt, reduce risk or halt.
+- Catch and log exceptions at module boundaries.
+- Do not silently ignore errors.
+
+7. Configuration
+- All runtime behavior controlled via config files and environment variables.
+- No hard-coded magic numbers or secrets.
+- Defaults must be safe (paper trading, conservative risk).
+
+8. Testing
+- Every module must have unit tests.
+- Critical paths (scoring, risk, execution) must have integration tests.
+- Tests must be deterministic and not depend on external services.
+
+9. Versioning
+- Models, features, and configs must be versioned.
+- Changes to interfaces must be documented in Aegis_Module_Contracts.md.
+
+10. AI-Safe Coding Rules
+- Do not bypass risk controls.
+- Do not introduce hidden coupling between modules.
+- Respect existing interfaces and contracts.
+- Prefer explicit, simple logic over cleverness.
