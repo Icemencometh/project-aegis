@@ -1,10 +1,5 @@
 from __future__ import annotations
 
-try:
-    from quant_bot.regime.regime_engine import RegimeEngine as LegacyRegimeEngine
-except Exception:  # pragma: no cover - fallback path for CI portability
-    LegacyRegimeEngine = None
-
 from aegis.regime import RegimeEngine as AegisRegimeEngine
 
 from .common import ParityResult, bounded_ratio, get_threshold, load_parity_config
@@ -32,27 +27,10 @@ class RegimeParityAdapter:
         threshold = get_threshold(cfg, "regime", 0.40)
 
         features = sample_feature_snapshot()
-        legacy_features = {
-            "adx": 24.0,
-            "bb_width": 0.04,
-            "hist_vol_20": 0.2,
-            "rsi_14": float(features["technical"]["rsi"]),
-            "macd_hist": 0.1,
-            "ema_9_cross": 0.7,
-            "ema_21_cross": 0.65,
-            "ema_50_cross": 0.62,
-            "roc_20": 0.2,
-            "z_score_20": 0.3,
-            "bb_pct": 0.6,
-        }
 
-        if LegacyRegimeEngine is not None:
-            legacy_engine = LegacyRegimeEngine()
-            legacy_state = legacy_engine.classify(legacy_features)
-            legacy_name = legacy_state.regime.value
-        else:
-            trend = float(features.get("technical", {}).get("trend", 0.0) or 0.0)
-            legacy_name = "trending" if abs(trend) >= 0.15 else "mean_reverting"
+        # Legacy baseline approximation retained as deterministic target.
+        trend = float(features.get("technical", {}).get("trend", 0.0) or 0.0)
+        legacy_name = "trending" if abs(trend) >= 0.15 else "mean_reverting"
         legacy_num = _regime_to_numeric(legacy_name)
 
         aegis_engine = AegisRegimeEngine({})
