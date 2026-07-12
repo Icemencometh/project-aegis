@@ -1,13 +1,15 @@
+"""Re-export of the canonical MetaModelEngine.
+
+aegis.scoring.meta.MetaModelEngine is the canonical implementation (it's the
+one Scoring Hub actually wires up per Aegis_Module_Contracts.md). This module
+used to carry a second, independently-drifting copy of the same class under
+`aegis.meta` -- that duplication was a coding-standards violation ("no hidden
+coupling between modules") waiting to bite the next person who edited one
+copy and not the other. Import path kept for backward compatibility.
+"""
+
 from __future__ import annotations
 
-from typing import Any, Dict
+from ..scoring.meta import MetaModelEngine
 
-
-class MetaModelEngine:
-    def __init__(self, cfg: Dict[str, Any]):
-        self.cfg = dict(cfg or {})
-
-    def score(self, components: Dict[str, Dict[str, Any]], regime_snapshot: Dict[str, Any]) -> float:
-        if not components:
-            return 0.0
-        return sum(float(component.get("score", 0.0)) for component in components.values()) / len(components)
+__all__ = ["MetaModelEngine"]

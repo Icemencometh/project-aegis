@@ -1,1 +1,5 @@
-"""Aegis regime package scaffold."""
+"""Aegis regime package."""
+
+from .engine import RegimeEngine
+
+__all__ = ["RegimeEngine"]
