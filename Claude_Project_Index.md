@@ -12,6 +12,8 @@ This index tells Claude exactly where to read and where to write.
 - [Aegis_Claude_Usage_Note.txt](Aegis_Claude_Usage_Note.txt)
 - [Aegis_Migration_Map.md](Aegis_Migration_Map.md)
 - [Aegis_Unified_Project_Map.md](Aegis_Unified_Project_Map.md)
+- [Unified_Aegis_Migration_Plan.md](Unified_Aegis_Migration_Plan.md)
+- [Aegis_GitHub_Claude_Integration_Checklist.md](Aegis_GitHub_Claude_Integration_Checklist.md)
 
 ## Canonical Write Locations
 
@@ -67,6 +69,14 @@ When migrating legacy logic:
 2. Keep old path functional with deprecation warning.
 3. Add tests proving parity for migrated behavior.
 4. Remove legacy code only after validated cutover.
+
+## Operating Mode
+
+Repository currently runs in Mode C (Hybrid):
+
+- `aegis/` is canonical for live and production runtime.
+- `quant_bot/` is retained for research/backtesting compatibility.
+- `modules/` and root legacy engines are deprecation surfaces only.
 
 ## Where to Put New GitHub/Claude Automation
 
