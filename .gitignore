@@ -1,4 +1,4 @@
-data/
+/data/
 
 # Secrets -- never commit these
 robinhood_credentials.json
