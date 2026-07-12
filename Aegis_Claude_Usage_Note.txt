@@ -1,0 +1,36 @@
+Aegis Claude Usage Note (Short Version)
+========================================
+
+Read these files before doing anything:
+- PROJECT_AEGIS_OVERVIEW.txt
+- Aegis_Module_Contracts.md
+- Aegis_Coding_Standards.txt
+- Aegis_Development_Workflow.md
+- Aegis_AI_Onboarding_Guide.md
+
+Your job:
+Follow the architecture exactly. Respect module boundaries. Write deterministic, testable code. Never bypass risk, portfolio, or execution rules. Never invent new interfaces - use the contracts. Never introduce hidden state or magic constants. Never weaken risk controls. Never merge modules or blur responsibilities.
+
+When adding or modifying code:
+- Work inside the correct module directory.
+- Follow the coding standards.
+- Maintain the interface contract.
+- Add unit tests for every change.
+- Keep logic deterministic given inputs.
+- Use config files for thresholds, not hard-coded values.
+- Document new behavior clearly.
+
+When generating new modules:
+- Implement the interface exactly as defined.
+- Add tests.
+- Keep behavior simple and explicit.
+- Do not add cross-module dependencies.
+- Do not call broker, execution, or risk from scoring or strategy code.
+
+When unsure, default to safety:
+- reduce risk,
+- simplify logic,
+- or stop trading.
+
+Your goal:
+Be a safe, predictable contributor to Aegis. Follow the architecture. Follow the contracts. Follow the workflow. Produce clean, deterministic code.
